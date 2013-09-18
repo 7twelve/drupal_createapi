@@ -275,23 +275,58 @@ function _createapi__helper__process_node_queue($queue_name, $fields = array(), 
  *   A formatted array of menu items for outputting.
  */
 function _createapi__helper__process_menu($menu_name) {
-  $links = menu_load_links($menu_name);
-  $formatted_links = array();
-  foreach ($links as $link) {
+  $tree = menu_build_tree($menu_name);
+  $formatted_links = _createapi__helper__process_menu_tree($tree);
+  return $formatted_links;
+}
+
+/**
+ * Loops through the menu tree, checking for both top
+ * level and child elements
+ *
+ * @param  array $tree
+ *   The full tree of the given menu
+ * @return array
+ *   A formatted array of menu items for outputting.
+ */
+function _createapi__helper__process_menu_tree($tree) {
+  $index = 0;
+  foreach ($tree as $item) {
+    $link = $item['link'];
+    $children = $item['below'];
+
     if (!$link['hidden']) {
-      $nid = '';
-      if (substr($link['link_path'], 0, 5) === 'node/') {
-        $nid = substr($link['link_path'], 5);
-      }
-      $formatted_links[] = array(
-        'internal_path' => $link['link_path'],
-        'alias' => drupal_get_path_alias($link['link_path']),
-        'title' => $link['link_title'],
-        'nid' => $nid,
-      );
+      $formatted_links[$index] = _createapi__helper__process_menu_link($link);
     }
+
+    if (count($children) > 0) {
+      $formatted_links[$index]['children'] = _createapi__helper__process_menu_tree($children);
+    }
+  $index++;
   }
   return $formatted_links;
+}
+
+/**
+ * Processes each individual link
+ *
+ * @param  array $link
+ *   A single link
+ * @return array
+ *   A formatted array of the link information
+ */
+function _createapi__helper__process_menu_link($link) {
+  $nid = '';
+  if (substr($link['link_path'], 0, 5) === 'node/') {
+    $nid = substr($link['link_path'], 5);
+  }
+
+  return array(
+    'internal_path' => $link['link_path'],
+    'alias' => drupal_get_path_alias($link['link_path']),
+    'title' => $link['link_title'],
+    'nid' => $nid,
+  );
 }
 
 /**
